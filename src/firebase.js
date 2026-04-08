@@ -3,13 +3,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth"; // 1. Add this import
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCswgJ9k0c4vEBDdBo5_d3c2w7lBtA5a_U",
-  authDomain: "mediqueue-150e7.firebaseapp.com",
-  projectId: "mediqueue-150e7",
-  storageBucket: "mediqueue-150e7.firebasestorage.app",
-  messagingSenderId: "472093551443",
-  appId: "1:472093551443:web:184bd4f2bd1033d9a04fa6",
-  measurementId: "G-VHZW02P875"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
