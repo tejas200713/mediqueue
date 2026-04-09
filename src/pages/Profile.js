@@ -5,6 +5,7 @@ import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { User, Shield, Mail, LogOut } from 'lucide-react';
+import { getPortalRoleForEmail } from '../constants/demoUsers';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function Profile() {
     load();
   }, [user?.uid]);
 
-  const role = profile?.role || (user?.email?.includes('doctor') ? 'doctor' : 'patient');
+  const role = profile?.role || getPortalRoleForEmail(user?.email);
 
   return (
     <div className="dashboard-wrapper">

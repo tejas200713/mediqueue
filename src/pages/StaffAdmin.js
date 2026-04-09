@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, addDoc, serverTimestamp, limit } from 'firebase/firestore';
 import Navbar from '../components/Navbar';
 
 export default function StaffAdmin() {
@@ -10,7 +10,28 @@ export default function StaffAdmin() {
 
   useEffect(() => {
     const q = query(collection(db, "queue"), where("status", "==", "waiting"), orderBy("token"));
-    return onSnapshot(q, (s) => setPatients(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubWaiting = onSnapshot(q, (s) => setPatients(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+
+    // Restore current consultation even after refresh/reopen.
+    const qActive = query(
+      collection(db, "queue"),
+      where("status", "in", ["called-in", "serving"]),
+      orderBy("token", "desc"),
+      limit(1)
+    );
+    const unsubActive = onSnapshot(qActive, (s) => {
+      if (s.empty) {
+        setActivePatient(null);
+        return;
+      }
+      const d = s.docs[0];
+      setActivePatient({ id: d.id, ...d.data() });
+    });
+
+    return () => {
+      unsubWaiting();
+      unsubActive();
+    };
   }, []);
 
   const handleCall = async (p) => {
@@ -37,6 +58,12 @@ export default function StaffAdmin() {
       });
       
       await updateDoc(doc(db, "queue", activePatient.id), { status: 'served' });
+      // Clear the "Now Serving" token so TV display doesn't keep showing the last served token.
+      await updateDoc(doc(db, "clinic_status", "current"), {
+        nowServing: 0,
+        lastServed: activePatient.token,
+        lastServedAt: serverTimestamp(),
+      });
       setMed({ name: '', dosage: '' });
       setActivePatient(null);
       alert("Prescription sent and Consultation Closed!");

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { DEMO_DOCTORS, getDemoDoctorByEmail, getPortalRoleForEmail } from '../constants/demoUsers';
 
-const DEMO_DOCTORS = [
-  { label: 'Dr. Arjun K.', email: 'arjun@phc.com', password: 'Doctor@123', userDocId: 'doc1' },
-  { label: 'Dr. Priya S.', email: 'priya@phc.com', password: 'Doctor@123', userDocId: 'doc2' },
-];
+const DEMO_DOCTOR_PASSWORD = 'Doctor@123';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,14 +19,35 @@ export default function Login() {
     try {
       setBusy(true);
       if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, pass);
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        // Patients: create profile shell so Role is deterministic everywhere.
+        await setDoc(
+          doc(db, 'users', cred.user.uid),
+          { email: cred.user.email, role: 'patient' },
+          { merge: true }
+        );
       } else {
-        await signInWithEmailAndPassword(auth, email, pass);
+        const cred = await signInWithEmailAndPassword(auth, email, pass);
+        const portalRole = getPortalRoleForEmail(cred.user.email);
+
+        // Doctors/admin: upsert role so Profile/Navbar don't misclassify them.
+        if (portalRole === 'doctor') {
+          const demoDoctor = getDemoDoctorByEmail(cred.user.email);
+          await setDoc(
+            doc(db, 'users', cred.user.uid),
+            {
+              email: cred.user.email,
+              role: 'doctor',
+              displayName: demoDoctor?.label,
+              userDocId: demoDoctor?.userDocId,
+            },
+            { merge: true }
+          );
+        }
       }
       // Route by role: doctors -> admin dashboard, patients -> patient view
-      const isDoctor = DEMO_DOCTORS.some((d) => d.email.toLowerCase() === email.toLowerCase());
-      if (email === 'admin@phc.com' || isDoctor) navigate('/admin');
-      else navigate('/register');
+      const portalRole = getPortalRoleForEmail(email);
+      navigate(portalRole === 'doctor' ? '/admin' : '/register');
     } catch (err) {
       alert(err.message);
     } finally {
@@ -92,7 +112,7 @@ export default function Login() {
               style={{ width: 'auto', padding: '10px 12px' }}
               onClick={() => {
                 setEmail(d.email);
-                setPass(d.password);
+                setPass(DEMO_DOCTOR_PASSWORD);
               }}
               disabled={busy}
             >

@@ -77,7 +77,8 @@ export default function PatientView() {
       all.sort((a, b) => score(b) - score(a));
 
       const active = all.find((r) => r.status === 'waiting' || r.status === 'serving') ?? null;
-      const called = all.find((r) => r.status === 'called' || r.status === 'called-in') ?? null;
+      // Keep a "last token" banner even after the appointment is completed.
+      const called = all.find((r) => r.status === 'called' || r.status === 'called-in' || r.status === 'served') ?? null;
 
       if (active) {
         setQueueData(active);
@@ -205,7 +206,9 @@ export default function PatientView() {
                 <span className="token-badge" style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
                   Token {String(lastCalled.token ?? '').padStart(3, '0')}
                 </span>
-                <h3 style={{ margin: 0 }}>You’ve been called</h3>
+                <h3 style={{ margin: 0 }}>
+                  {lastCalled.status === 'served' ? 'Last token served' : 'You’ve been called'}
+                </h3>
               </div>
               <div className="card-muted">
                 {lastCalled.room || 'Room'} · {lastCalled.doctor || 'Doctor'}

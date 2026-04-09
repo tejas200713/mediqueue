@@ -15,7 +15,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Debug (remove later)
-console.log("API KEY:", AIzaSyCswgJ9k0c4vEBDdBo5_d3c2w7lBtA5a_U);
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
